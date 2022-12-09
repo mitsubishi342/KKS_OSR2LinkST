@@ -64,12 +64,12 @@ namespace kks_osr2Link
         String stringToEdit = "Disconnect";
         Vector2 _scroll;
         int _selected;
-        private ConfigEntry<KeyboardShortcut> Show { get; set; }
+        private ConfigEntry<BepInEx.Configuration.KeyboardShortcut> Show { get; set; }
         private ConfigEntry<int>[] _Port { get; set; }
 
         public kks_osr2Link()
         {
-            Show = Config.AddSetting("Hotkeys", "Show window", new KeyboardShortcut(KeyCode.G));
+            Show = Config.AddSetting("Hotkeys", "Show window", new BepInEx.Configuration.KeyboardShortcut(KeyCode.G));
 
         }
 
@@ -127,7 +127,7 @@ namespace kks_osr2Link
             {
                 windowRect.position = GUILayout.Window(6123, windowRect, MovableWindow, "--- Studio OSR2 Link ---").position;
                 KKAPI.Utilities.IMGUIUtils.EatInputInRect(windowRect);
-                var centeredStyle = GUI.skin.textField ;
+                var centeredStyle = GUI.skin.textField;
                 centeredStyle.alignment = TextAnchor.UpperCenter;
             }
         }
@@ -319,8 +319,8 @@ namespace kks_osr2Link
                     if (inverseSW)
                     {
                         Tcode = "L0" + Convert.ToString((int)swing)
-                                + " L1" + Convert.ToString(1000-(int)rollX)
-                                + " R1" + Convert.ToString(1000-(int)rollZ);
+                                + " L1" + Convert.ToString(1000 - (int)rollX)
+                                + " R1" + Convert.ToString(1000 - (int)rollZ);
                         serial.WriteLine(Tcode);
                     }
                     else
