@@ -1,5 +1,5 @@
 # KKS_OSR2LinkST
-<h2>KKS_OSR2LinkST v1.0.0</h2>
+<h2>KKS_OSR2LinkST v1.1.0</h2>
 
 requirement<br>
 Tempest MAx's OSR2+<br>
