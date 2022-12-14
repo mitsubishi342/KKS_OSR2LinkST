@@ -1,25 +1,27 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
 using BepInEx;
 using HarmonyLib;
 using System;
 using System.IO.Ports;
 using System.Runtime.CompilerServices;
-using KKAPI;
 using BepInEx.Configuration;
-
+using System.Collections.Generic;
+using Manager;
+using KKAPI;
 namespace kks_osr2Link
 {
-    [BepInPlugin("org.bepinex.plugins.KKS_OSR2LinkST", "KKS_OSR2LinkST", "1.0.0")]
+    [BepInPlugin("org.bepinex.plugins.KKS_OSR2LinkST", "KKS_OSR2LinkST", "1.1.0")]
     [BepInProcess("CharaStudio")]
 
     public class kks_osr2Link : BaseUnityPlugin
     {
-        Rect windowRect = new Rect(((Screen.width / 2) - (350 / 2)), ((Screen.height / 2) - (470 / 2)), 350, 470);
-        GameObject Myobj;
+        Rect windowRect = new Rect(((Screen.width / 2) - (350 / 2)), ((Screen.height / 2) - (600 / 2)), 350, 600);
+        GameObject myObjA;
+        //GameObject myObjB;
         String Tcode;
         SerialPort serial;
         bool syncCylinBtn = false;
+        bool syncChrBtn = false;
         bool spacekey = false;
         bool autoMoveSW = false;
         bool inverseSW = false;
@@ -27,10 +29,11 @@ namespace kks_osr2Link
         bool toggleRNDStrk = false;
         bool wkey = false;
         int selGridIntB = 0;
-        //int selGridIntA = 0;
+        int nowChar = 0;
         string[] selStringsB = { "L/R", "F/B", "spinL", "spinR", "Twist", "Infinit", "Infinit2", "Omega" };
         string[] selStringsC = { "OSR2 CONNECT", "DISCONNECT" };
-        //string[] selStringsA = { "Twist", "Infinit", "Infinit2", "Omega" };
+        string[] charListC = { "" };
+        string[] parentBtn = { "JointIK", "Reset" };
         float speedA;
         float speedB;
         float rollweight = 0.01f;
@@ -59,43 +62,59 @@ namespace kks_osr2Link
         Texture2D txtBackground;
         GUIStyle winStyle;
         GUIStyle txtStyle;
-
         bool linK;
         String stringToEdit = "Disconnect";
         Vector2 _scroll;
         int _selected;
+        //Vector2 _scrollChr;
+        int _selectedChr;
         private ConfigEntry<BepInEx.Configuration.KeyboardShortcut> Show { get; set; }
         private ConfigEntry<int>[] _Port { get; set; }
-
+        //int fCount;
+        int fRange = 25;
+        List<ChaControl> charList = new List<ChaControl> { };
+        bool firstLoad = true;
         public kks_osr2Link()
         {
             Show = Config.AddSetting("Hotkeys", "Show window", new BepInEx.Configuration.KeyboardShortcut(KeyCode.G));
-
         }
 
         void Start()
-
         {
-            //Application.targetFrameRate = 15; //60FPSに設定
         }
 
         void Update()
         {
 
+            //Logger.LogInfo("nowValue" + ((currentFemaleData != null) ? currentFemaleData.fullName : null) ?? string.Empty);
+            if (firstLoad)
+            {
+                new GameObject("CornX").transform.parent = GameObject.Find("CommonSpace").transform;
+                new GameObject("CylinX").transform.parent = GameObject.Find("CommonSpace").transform;
+                firstLoad = false;
+            }
+
             if (syncCylinBtn)
             {
                 if (GameObject.Find("p_koi_stu_cylinder01_02") != null)
                 {
-                    Myobj = GameObject.Find("p_koi_stu_cylinder01_02"); //シリンダーに接続
+                    myObjA = GameObject.Find("p_koi_stu_cylinder01_02");
                     if (autoMoveSW)
                     {
                         CylinderMovefunc();
                     }
-
                 }
             }
-
-
+            if (syncChrBtn)
+            {
+                if (GameObject.Find("chaF_00" + (_selectedChr + 1)) != null)
+                {
+                    if (autoMoveSW)
+                    {
+                        CylinderMovefunc();
+                    }
+                }
+            }
             if (Input.GetKeyUp(KeyCode.Space))
             {
                 if (spacekey == false)
@@ -118,7 +137,6 @@ namespace kks_osr2Link
                     wkey = false;
                 }
             }
-
         }
 
         void OnGUI()
@@ -137,7 +155,6 @@ namespace kks_osr2Link
             _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Width(100));
             _selected = GUILayout.SelectionGrid(_selected, SerialPort.GetPortNames(), 1);
             GUILayout.EndScrollView();
-
             if (GUILayout.Button("CONNECT") && linK == false)
             {
                 try
@@ -173,18 +190,37 @@ namespace kks_osr2Link
             }
             GUILayout.EndHorizontal();
 
-            syncCylinBtn = GUILayout.Toggle(syncCylinBtn, "Sync cylinder");
-            if (syncCylinBtn)
+            GUILayout.BeginHorizontal();
+            if (syncChrBtn == false)
+            {
+                syncCylinBtn = GUILayout.Toggle(syncCylinBtn, "Sync cylinder");
+            }
+            if (syncCylinBtn == false)
+            {
+                syncChrBtn = GUILayout.Toggle(syncChrBtn, "Sync charactor");
+            }
+            GUILayout.EndHorizontal();
+            if (syncChrBtn)
+            {
+                _selectedChr = GUILayout.SelectionGrid(_selectedChr, string.Join(",", GetFemaleAll()).Split(','), 2);
+                if (_selectedChr > 9)
+                {
+                    _selectedChr = 9;
+                }
+                if (CharChange(_selectedChr, nowChar))
+                {
+                    nowChar = _selectedChr;
+                }
+            }
+            if (syncCylinBtn || syncChrBtn)
             {
                 GUILayout.BeginHorizontal();
                 autoMoveSW = GUILayout.Toggle(autoMoveSW, "Auto Move");
                 inverseSW = GUILayout.Toggle(inverseSW, "Inverse Z");
-
                 GUILayout.EndHorizontal();
-
             }
             GUILayout.Label("[ Stroke section ]", winStyle);
-            if (syncCylinBtn)
+            if (syncCylinBtn || syncChrBtn)
             {
                 toggleRNDStrk = GUILayout.Toggle(toggleRNDStrk, "Random Stroke");
                 GUILayout.Label("Speed");
@@ -193,7 +229,7 @@ namespace kks_osr2Link
             GUILayout.Label("Range");
             MyGUI.MinMaxSlider(ref minValue, ref maxValue, 0, 1000);
             GUILayout.Label("[ Swing section ]", winStyle);
-            if (syncCylinBtn)
+            if (syncCylinBtn || syncChrBtn)
             {
                 toggleRNDRol = GUILayout.Toggle(toggleRNDRol, "Random Swing");
                 GUILayout.Label("Speed");
@@ -202,40 +238,38 @@ namespace kks_osr2Link
             GUILayout.Label("weight");
             rollweight = GUILayout.HorizontalSlider(rollweight, 0, 1);
             selGridIntB = GUILayout.SelectionGrid(selGridIntB, selStringsB, 4);
-            //selGridIntA = GUILayout.SelectionGrid(selGridIntA, selStringsA, 5);
-
             stringToEdit = GUILayout.TextArea(stringToEdit, 300, txtStyle);
-
-            GUI.Button(new Rect(0, 25, 345, 465), " ", winStyle);
+            GUI.Button(new Rect(0, 25, 345, 595), "", winStyle);
             KKAPI.Utilities.IMGUIUtils.DragResizeEatWindow(6123, windowRect);
-
         }
 
         void CylinderMovefunc()
         {
-
+            if (syncCylinBtn)
+            {
+                fRange = 25;
+            }
+            if (syncChrBtn)
+            {
+                fRange = 20;
+            }
             timeAR = timeAR + speedA * minmax * 0.01f;
             timeBR = timeBR + speedB * 0.01f;
-
             minmax = ((minValue + (1000 - maxValue)) / 300);
             minmax = Mathf.Clamp(minmax, 1, 9);
-            nowValue = Wavegen("sin", timeAR, 1);//ストローク波
-
+            nowValue = Wavegen("sin", timeAR, 1);//stroke
             if (toggleRNDStrk)
             {
-                //nowValue = WaveRndgen(4, timeAR, 12);
                 rr = Mathf.Sin(timeAR) / 12;
                 tt = tt + rr + Mathf.Sin(Time.time * 2) * 0.01f;
-
                 nowValue = Mathf.Sin(tt);
             }
             nowValueB = MathfConv.ChangeRange(-1, 1, nowValue, minValue, maxValue);
             nowValueC = nowValueB;
-
             sinwave = Wavegen("sin", timeBR, rollweight);
             coswave = Wavegen("cos", timeBR, rollweight);
-            sinwaveB = MathfConv.ChangeRange(-1, 1, sinwave, -25, 25); //ロール波
-            coswaveB = MathfConv.ChangeRange(-1, 1, coswave, -25, 25);
+            sinwaveB = MathfConv.ChangeRange(-1, 1, sinwave, -fRange, fRange); //roll
+            coswaveB = MathfConv.ChangeRange(-1, 1, coswave, -fRange, fRange);
             if (toggleRNDRol)
             {
                 if (Time.time % UnityEngine.Random.Range(2, 4) < 0.02f)
@@ -245,73 +279,73 @@ namespace kks_osr2Link
             }
             switch (selGridIntB)//ロール動作切り替え
             {
-
                 case 0:
-                    Myobj.transform.localEulerAngles = new Vector3(0, 0, sinwaveB);
+                    SendObj(0, 0, sinwaveB);
                     rollXPC = rollXPC - 0.01f;
                     if (rollXPC < 0) { rollXPC = 0; }
                     rollZPC = sinwave;
                     break;
                 case 1:
-                    Myobj.transform.localEulerAngles = new Vector3(sinwaveB, 0, 0);
+                    SendObj(sinwaveB, 0, 0);
                     rollXPC = -sinwave;
                     rollZPC = rollZPC - 0.01f;
                     if (rollZPC < 0) { rollZPC = 0; }
                     break;
                 case 2:
-                    Myobj.transform.localEulerAngles = new Vector3(coswaveB, 0, sinwaveB);
+                    SendObj(coswaveB, 0, sinwaveB);
                     rollXPC = sinwave;
                     rollZPC = coswave;
                     break;
                 case 3:
-                    Myobj.transform.localEulerAngles = new Vector3(sinwaveB, 0, coswaveB);
+                    SendObj(sinwaveB, 0, coswaveB);
                     rollXPC = coswave;
                     rollZPC = sinwave;
                     break;
                 case 4:
                     count = count + (speedB / 7) * 0.01f;
-                    rollZPC = Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f) * rollweight;//角度
+                    rollZPC = Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f) * rollweight;
                     rollXPC = -(Mathf.Cos(2 * Mathf.PI * Mathf.Sin(count) * 1f) * rollweight);
-                    Myobj.transform.localEulerAngles = new Vector3(-rollXPC * 25, 0, rollZPC * 25);
+                    SendObj(-rollXPC * fRange, 0, rollZPC * fRange);
                     break;
                 case 5:
                     count = count + (speedB / 7) * 0.01f;
-                    rollZPC = -(Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f) * rollweight);//角度
+                    rollZPC = -(Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f) * rollweight);
                     rollXPC = (Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f * 2) * rollweight);
-                    Myobj.transform.localEulerAngles = new Vector3(-rollXPC * 25, 0, rollZPC * 25);
+                    SendObj(-rollXPC * fRange, 0, rollZPC * fRange);
                     break;
                 case 6:
                     count = count + (speedB / 7) * 0.01f;
-                    rollZPC = (Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f) * rollweight);//角度
+                    rollZPC = (Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f) * rollweight);
                     rollXPC = (Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f * 2) * rollweight);
-                    Myobj.transform.localEulerAngles = new Vector3(rollZPC * 25, 0, rollXPC * 25);
+                    SendObj(rollZPC * fRange, 0, rollXPC * fRange);
                     break;
                 case 7:
                     count = count + (speedB / 7) * 0.01f;
-                    rollZPC = -(Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f * 2) * rollweight);//角度
+                    rollZPC = -(Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f * 2) * rollweight);
                     rollXPC = (Mathf.Sin(2 * Mathf.PI * Mathf.Sin(count) * 1f * 3) * rollweight);
-                    Myobj.transform.localEulerAngles = new Vector3(-rollXPC * 25, 0, rollZPC * 25);
+                    SendObj(-rollXPC * fRange, 0, rollZPC * fRange);
                     break;
-
+            }
+            if (syncChrBtn)
+            {
+                myObjA.transform.localPosition = new Vector3(0, nowValueC / 7000, 0);// push Obj
+            }
+            if (syncCylinBtn)
+            {
+                myObjA.transform.localPosition = new Vector3(0, nowValueC / 8000, 0);// push Obj
             }
 
-
-            Myobj.transform.localPosition = new Vector3(0, nowValueC / 8000, 0);// オブジェクトに動作流し込み
             swingPC = nowValueC;
-
             if (swingPC > 900) { swingPC = 900; }
             if (swingPC < 100) { swingPC = 100; }
             swing = swingPC;
             rollX = MathfConv.ChangeRange(-1, 1, rollXPC, 100, 900);
             rollZ = MathfConv.ChangeRange(-1, 1, rollZPC, 100, 900);
-
             Osr2senddata();
         }
 
-
         void Osr2senddata()
         {
-
             if (linK)
             {
                 try
@@ -352,15 +386,12 @@ namespace kks_osr2Link
         }
         private void Awake()
         {
-
             winBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
             winBackground.SetPixel(0, 0, new Color(1, 1, 1, 0.25f));
             winBackground.Apply(); // not sure if this is necessary
-
             txtBackground = new Texture2D(1, 1, TextureFormat.RGBAFloat, false);
             txtBackground.SetPixel(0, 0, new Color(0, 0, 0, 0.25f));
             txtBackground.Apply(); // not sure if this is necessary
-
             winStyle = new GUIStyle(GUIStyle.none);
             winStyle.fontSize = 18;
             winStyle.normal.textColor = Color.white;
@@ -385,56 +416,38 @@ namespace kks_osr2Link
                 int controlID = GUIUtility.GetControlID(FocusType.Passive);
                 int minThumbControlID = GUIUtility.GetControlID(FocusType.Passive);
                 int maxThumbControlID = GUIUtility.GetControlID(FocusType.Passive);
-
-                // Do not proceed for layout event.
                 if (Event.current.type == EventType.Layout)
                     return;
-
-                // Clamp current state of values.
                 minValue = Mathf.Clamp(minValue, minLimit, maxLimit);
                 maxValue = Mathf.Max(minValue, Mathf.Clamp(maxValue, minLimit, maxLimit));
-
-                // Calculate normalized version of values.
                 float range = Mathf.Abs(maxLimit - minLimit);
                 float normalizedMinValue = (minValue - minLimit) / range;
                 float normalizedMaxValue = (maxValue - minLimit) / range;
-
-                // Calculate visual version of values.
                 float minValueX = position.x + normalizedMinValue * position.width;
                 float maxValueX = position.x + normalizedMaxValue * position.width;
-
                 Rect minThumbPosition = new Rect(minValueX - 5, position.y, 10, position.height);
                 Rect maxThumbPosition = new Rect(maxValueX, position.y, 10, position.height);
-
                 float normalizedMousePosition;
-
                 switch (Event.current.GetTypeForControl(controlID))
                 {
                     case EventType.MouseDown:
-                        // Mouse pressed down on minimum thumb position?
                         if (minThumbPosition.Contains(Event.current.mousePosition))
                         {
                             GUIUtility.hotControl = minThumbControlID;
                             Event.current.Use();
                         }
-                        // Mouse pressed down on maximum thumb position?
                         else if (maxThumbPosition.Contains(Event.current.mousePosition))
                         {
                             GUIUtility.hotControl = maxThumbControlID;
                             Event.current.Use();
                         }
                         break;
-
                     case EventType.MouseUp:
-                        // Extremely important!!
                         if (GUIUtility.hotControl == minThumbControlID || GUIUtility.hotControl == maxThumbControlID || GUIUtility.hotControl == controlID)
                             GUIUtility.hotControl = 0;
                         break;
-
                     case EventType.MouseDrag:
                         normalizedMousePosition = (Event.current.mousePosition.x - position.x) / position.width;
-
-                        // Process mouse movement?
                         if (GUIUtility.hotControl == minThumbControlID)
                         {
                             float newMinValue = Mathf.Clamp(normalizedMousePosition * range + minLimit, minLimit, maxValue);
@@ -456,15 +469,10 @@ namespace kks_osr2Link
                             Event.current.Use();
                         }
                         break;
-
                     case EventType.Repaint:
-                        // Draw background of slider control.
                         backgroundStyle.Draw(new Rect(position.x, position.y + 5, position.width, position.height - 10), GUIContent.none, controlID);
-                        // Draw background of thumb range.
                         thumbStyle.Draw(new Rect(minValueX, position.y + 9, maxValueX - minValueX, 5), GUIContent.none, false, false, false, false);
-                        // Draw minimum thumb button.
                         minThumbStyle.Draw(minThumbPosition, GUIContent.none, minThumbControlID);
-                        // Draw maximum thumb button.
                         maxThumbStyle.Draw(maxThumbPosition, GUIContent.none, maxThumbControlID);
                         break;
                 }
@@ -482,12 +490,10 @@ namespace kks_osr2Link
 
         private float Wavegen(string sincos, float wavelength, float amplitude)
         {
-
             var wave = 0f;
             if (sincos == "sin")
             {
                 wave = Mathf.Sin(wavelength) * amplitude;
-
             }
             if (sincos == "cos")
             {
@@ -495,10 +501,89 @@ namespace kks_osr2Link
             }
             return wave;
         }
+
+        private bool CharChange(int charno, int nowchar)
+        {
+            var cha = "CommonSpace/chaF_00" + (charno + 1);
+            if (GameObject.Find("CommonSpace/chaF_00" + (nowchar + 1)) != null && GameObject.Find("CommonSpace/chaF_00" + (nowchar + 1) + "/CornX/CylinX/cf_t_hips(work)") != null)
+            {
+                GameObject.Find("CylinX").transform.localRotation = default;
+                GameObject.Find("CylinX").transform.localPosition = default;
+                GameObject.Find("CommonSpace/chaF_00" + (nowchar + 1) + "/CornX/CylinX/cf_t_hips(work)").transform.SetParent(GameObject.Find("CommonSpace/chaF_00" + (nowchar + 1)).transform);
+                GameObject.Find("CylinX").transform.SetParent(GameObject.Find("CommonSpace").transform);
+                GameObject.Find("CornX").transform.SetParent(GameObject.Find("CommonSpace").transform);
+            }
+
+            if (GameObject.Find(cha) != null && GameObject.Find(cha + "/cf_t_hips(work)") != null)
+            {
+                GameObject.Find("CylinX").transform.SetParent(GameObject.Find("CornX").transform);
+                GameObject.Find("CornX").transform.position = GameObject.Find(cha + "/BodyTop/p_cf_body_bone/cf_j_root/cf_n_height/cf_j_hips/cf_j_waist01/cf_j_waist02/cf_d_kokan/cf_j_kokan").transform.position;
+                GameObject.Find("CornX").transform.eulerAngles = GameObject.Find(cha + "/BodyTop/p_cf_body_bone/cf_j_root/cf_n_height/cf_j_hips/cf_j_waist01/cf_j_waist02/cf_d_kokan/cf_j_kokan").transform.eulerAngles;
+                GameObject.Find("CornX").transform.SetParent(GameObject.Find(cha).transform);
+                GameObject.Find(cha + "/cf_t_hips(work)").transform.SetParent(GameObject.Find("CylinX").transform);
+
+                myObjA = GameObject.Find("CylinX");
+                return true;
+            }
+            return false;
+        }
+        private void SendObj(float x, float y, float z)
+        {
+            try
+            {
+                myObjA.transform.localEulerAngles = new Vector3(x, y, z);
+            }
+            catch
+            {
+                if (syncChrBtn)
+                {
+                    if (GameObject.Find("CornX") == null)
+                    { new GameObject("CornX").transform.parent = GameObject.Find("CommonSpace").transform; }
+                    if (GameObject.Find("CylinX") != null)
+                    { new GameObject("CylinX").transform.parent = GameObject.Find("CommonSpace").transform; }
+
+                    if (CharChange(_selectedChr, nowChar))
+                    {
+                        nowChar = _selectedChr;
+                    }
+                }
+                if (syncCylinBtn)
+                {
+                    if (GameObject.Find("p_koi_stu_cylinder01_02") != null)
+                    {
+                        myObjA = GameObject.Find("p_koi_stu_cylinder01_02");
+                    }
+                }
+
+            }
+        }
         private void OnDestroy()
         {
             serial.Close();
         }
+        public static List<ChaControl> GetFemaleAll()
+        {
+            List<ChaControl> list = new List<ChaControl>();
+            List<ChaControl> charaList = Character.GetCharaList(1);
+            bool flag = charaList == null || charaList.Count == 0;
+            List<ChaControl> result;
+            if (flag)
+            {
+                result = list;
+            }
+            else
+            {
+                for (int i = 0; i <= charaList.Count - 1; i++)
+                {
+                    bool hiPoly = charaList[i].hiPoly;
+                    if (hiPoly)
+                    {
+                        list.Add(charaList[i]);
+                    }
+                }
+                result = list;
+            }
+            return result;
+        }
     }
-
 }

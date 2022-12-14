@@ -1,19 +1,23 @@
 # KKS_OSR2LinkST
-KKS_OSR2LinkST v1.0.0
+<h2>KKS_OSR2LinkST v1.0.0</h2>
 
-requirement
-Tempest MAx's OSR2+
-https://www.patreon.com/tempestvr
+requirement<br>
+Tempest MAx's OSR2+<br>
+https://www.patreon.com/tempestvr<br>
 
-BepInEx 5.4(https://github.com/BepInEx/BepInEx/releases)
-KKSAPI_v1.35(https://github.com/IllusionMods/IllusionModdingAPI)
-KKS_BepisPlugins(https://github.com/bbepis/BepisPlugins/releases)
+BepInEx 5.4(https://github.com/BepInEx/BepInEx/releases)<br>
+KKSAPI_v1.35(https://github.com/IllusionMods/IllusionModdingAPI)<br>
+KKS_BepisPlugins(https://github.com/bbepis/BepisPlugins/releases)<br>
 
-NodesConstraints
+NodesConstraints<br>
 
- Installation
+ Installation<br>
  Extract the plugin .zip file to your game folder.
 
+V1.1.0 no longer requires a cylinder.<br>
+<br>
+
+However, the cylinder mode is retained as it allows for finer adjustments.<br>
 
 "KKS_OSR2LinkST" This is a plug-in that works with Koikatsu Sunshine's CharaStudio.
 KKS_OSR2LinkST gets the motion of a "cylinder" object placed in the scene.
@@ -26,3 +30,7 @@ You can synchronize the up-and-down movement and swing movement that is poured i
 Looking ahead, I'm not sure it's possible.
 I'm thinking of a function to send the movement of the character to OSR2.
 If I can do that, I feel like I can use it in the mainGame.
+
+<h3>next update<br></H3>
+Next, I would like to support the free H mode of the main game.<br>
+But I don't know if that is possible.
