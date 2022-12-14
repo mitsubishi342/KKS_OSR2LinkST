@@ -539,7 +539,7 @@ namespace kks_osr2Link
                 {
                     if (GameObject.Find("CornX") == null)
                     { new GameObject("CornX").transform.parent = GameObject.Find("CommonSpace").transform; }
-                    if (GameObject.Find("CylinX") != null)
+                    if (GameObject.Find("CylinX") == null)
                     { new GameObject("CylinX").transform.parent = GameObject.Find("CommonSpace").transform; }
 
                     if (CharChange(_selectedChr, nowChar))
