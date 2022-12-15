@@ -15,7 +15,13 @@ NodesConstraints<br>
  Extract the plugin .zip file to your game folder.
 
 V1.1.0 no longer requires a cylinder.<br>
-<br>
+usage
+1. load the character.<br>
+2. Assign your favorite poses and motions.<br>
+3. Open the anim-kinema-IK tab, press "Refer anime position" and turn on IK.<br>
+4. In the OSR2 Link window, press the Sync Character button, then press the AutoMove button.<br>
+If you want to change the animation, start over from number 2.<br>
+(Up to 9 characters can be selected, but,HS2 version only main character)<br>
 
 However, the cylinder mode is retained as it allows for finer adjustments.<br>
 
