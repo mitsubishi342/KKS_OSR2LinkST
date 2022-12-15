@@ -55,9 +55,6 @@
     <Reference Include="KKSAPI">
       <HintPath>..\..\KoikatsuSunshine\BepInEx\plugins\KKSAPI.dll</HintPath>
     </Reference>
-    <Reference Include="KKS_ExpressionControl">
-      <HintPath>..\..\KoikatsuSunshine\BepInEx\plugins\KKS_ExpressionControl.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Collections.Immutable, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Collections.Immutable.7.0.0\lib\net462\System.Collections.Immutable.dll</HintPath>
