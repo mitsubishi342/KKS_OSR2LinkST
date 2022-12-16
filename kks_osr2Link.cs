@@ -328,7 +328,7 @@ namespace kks_osr2Link
             }
             if (syncChrBtn)
             {
-                myObjA.transform.localPosition = new Vector3(0, nowValueC / 7000, 0);// push Obj
+                myObjA.transform.localPosition = new Vector3(0, nowValueC / 5500, 0);// push Obj
             }
             if (syncCylinBtn)
             {
