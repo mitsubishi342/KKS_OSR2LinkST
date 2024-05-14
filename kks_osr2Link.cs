@@ -155,11 +155,12 @@ namespace kks_osr2Link
             _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Width(100));
             _selected = GUILayout.SelectionGrid(_selected, SerialPort.GetPortNames(), 1);
             GUILayout.EndScrollView();
+            GUILayout.Label(SerialPort.GetPortNames()[_selected]);
             if (GUILayout.Button("CONNECT") && linK == false)
             {
                 try
                 {
-                    serial = new SerialPort("COM" + _selected.ToString(), 115200);
+                    serial = new SerialPort(SerialPort.GetPortNames()[_selected], 115200);
                     serial.Open();
                     serial.ReadTimeout = 10;
                     serial.WriteLine("L0500 L1500 R1500");
