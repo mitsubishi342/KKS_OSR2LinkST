@@ -19,7 +19,6 @@ namespace kks_osr2Link
         GameObject myObjA;
         //GameObject myObjB;
         String Tcode;
-        SerialPort serial;
         bool syncCylinBtn = false;
         bool syncChrBtn = false;
         bool spacekey = false;
@@ -74,6 +73,8 @@ namespace kks_osr2Link
         int fRange = 25;
         List<ChaControl> charList = new List<ChaControl> { };
         bool firstLoad = true;
+        SerialPort serial = new SerialPort() { BaudRate = 115200 };
+        
         public kks_osr2Link()
         {
             Show = Config.AddSetting("Hotkeys", "Show window", new BepInEx.Configuration.KeyboardShortcut(KeyCode.G));
@@ -160,7 +161,7 @@ namespace kks_osr2Link
             {
                 try
                 {
-                    serial = new SerialPort(SerialPort.GetPortNames()[_selected], 115200);
+                    serial.PortName = SerialPort.GetPortNames()[_selected];
                     serial.Open();
                     serial.ReadTimeout = 10;
                     serial.WriteLine("L0500 L1500 R1500");
